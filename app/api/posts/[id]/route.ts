@@ -1,0 +1,150 @@
+import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+
+// GET /api/posts/[id] - Get single post
+export async function GET(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const post = await prisma.post.findUnique({
+            where: { id: params.id },
+            include: {
+                author: {
+                    select: { id: true, name: true, email: true, image: true }
+                },
+                tags: true,
+                comments: {
+                    include: {
+                        author: {
+                            select: { id: true, name: true, image: true }
+                        }
+                    },
+                    orderBy: { createdAt: "desc" }
+                },
+                _count: {
+                    select: { comments: true }
+                }
+            }
+        })
+
+        if (!post) {
+            return NextResponse.json({ error: "Post not found" }, { status: 404 })
+        }
+
+        return NextResponse.json(post)
+    } catch (error) {
+        console.error("Error fetching post:", error)
+        return NextResponse.json({ error: "Failed to fetch post" }, { status: 500 })
+    }
+}
+
+// PUT /api/posts/[id] - Update post
+export async function PUT(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const session = await getServerSession(authOptions)
+
+        if (!session?.user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        }
+
+        const body = await request.json()
+        const { title, content, excerpt, tags, published } = body
+
+        // Check if user owns the post
+        const existingPost = await prisma.post.findUnique({
+            where: { id: params.id },
+            include: { author: true }
+        })
+
+        if (!existingPost) {
+            return NextResponse.json({ error: "Post not found" }, { status: 404 })
+        }
+
+        if (existingPost.authorId !== session.user.id) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+        }
+
+        // Handle tags
+        const tagConnections = []
+        if (tags && tags.length > 0) {
+            for (const tagName of tags) {
+                const tag = await prisma.tag.upsert({
+                    where: { name: tagName },
+                    update: {},
+                    create: { name: tagName }
+                })
+                tagConnections.push({ id: tag.id })
+            }
+        }
+
+        // Update post
+        const updatedPost = await prisma.post.update({
+            where: { id: params.id },
+            data: {
+                title,
+                content,
+                excerpt: excerpt || content.substring(0, 150) + "...",
+                published,
+                tags: {
+                    set: [], // Clear existing tags
+                    connect: tagConnections // Add new tags
+                }
+            },
+            include: {
+                author: {
+                    select: { id: true, name: true, email: true, image: true }
+                },
+                tags: true
+            }
+        })
+
+        return NextResponse.json(updatedPost)
+    } catch (error) {
+        console.error("Error updating post:", error)
+        return NextResponse.json({ error: "Failed to update post" }, { status: 500 })
+    }
+}
+
+// DELETE /api/posts/[id] - Delete post
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const session = await getServerSession(authOptions)
+
+        if (!session?.user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        }
+
+        // Check if user owns the post
+        const existingPost = await prisma.post.findUnique({
+            where: { id: params.id },
+            include: { author: true }
+        })
+
+        if (!existingPost) {
+            return NextResponse.json({ error: "Post not found" }, { status: 404 })
+        }
+
+        if (existingPost.authorId !== session.user.id) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+        }
+
+        // Delete post
+        await prisma.post.delete({
+            where: { id: params.id }
+        })
+
+        return NextResponse.json({ message: "Post deleted successfully" })
+    } catch (error) {
+        console.error("Error deleting post:", error)
+        return NextResponse.json({ error: "Failed to delete post" }, { status: 500 })
+    }
+}
