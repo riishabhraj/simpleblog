@@ -6,11 +6,12 @@ import { prisma } from "@/lib/prisma"
 // GET /api/posts/[id] - Get single post
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params
         const post = await prisma.post.findUnique({
-            where: { id: params.id },
+            where: { id },
             include: {
                 author: {
                     select: { id: true, name: true, email: true, image: true }
@@ -44,7 +45,7 @@ export async function GET(
 // PUT /api/posts/[id] - Update post
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions)
@@ -53,12 +54,13 @@ export async function PUT(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
+        const { id } = await params
         const body = await request.json()
         const { title, content, excerpt, tags, published } = body
 
         // Check if user owns the post
         const existingPost = await prisma.post.findUnique({
-            where: { id: params.id },
+            where: { id },
             include: { author: true }
         })
 
@@ -85,7 +87,7 @@ export async function PUT(
 
         // Update post
         const updatedPost = await prisma.post.update({
-            where: { id: params.id },
+            where: { id },
             data: {
                 title,
                 content,
@@ -114,7 +116,7 @@ export async function PUT(
 // DELETE /api/posts/[id] - Delete post
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions)
@@ -123,9 +125,11 @@ export async function DELETE(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
+        const { id } = await params
+
         // Check if user owns the post
         const existingPost = await prisma.post.findUnique({
-            where: { id: params.id },
+            where: { id },
             include: { author: true }
         })
 
@@ -139,7 +143,7 @@ export async function DELETE(
 
         // Delete post
         await prisma.post.delete({
-            where: { id: params.id }
+            where: { id }
         })
 
         return NextResponse.json({ message: "Post deleted successfully" })

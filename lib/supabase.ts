@@ -164,8 +164,7 @@
 //   }
 // }
 
-// lib/supabase.ts
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -186,8 +185,8 @@ if (!supabaseAnonKey.startsWith('eyJ')) {
   throw new Error('Invalid Supabase anon key format - should start with "eyJ"')
 }
 
-let supabase: any
-let supabaseAdmin: any = null
+let supabase: SupabaseClient
+let supabaseAdmin: SupabaseClient | null = null
 
 try {
   console.log('Creating Supabase client...')

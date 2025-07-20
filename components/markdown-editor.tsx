@@ -9,6 +9,7 @@ import { useSession } from "next-auth/react"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Image from 'next/image'
 import { uploadImage } from "@/lib/supabase"
 
 interface MarkdownEditorProps {
@@ -104,8 +105,8 @@ export function MarkdownEditor({
             <div
               {...getRootProps()}
               className={`mt-4 border-2 border-dashed rounded-md p-4 text-center cursor-pointer transition-colors ${isDragActive
-                  ? 'border-blue-400 bg-blue-50 dark:bg-blue-950'
-                  : 'border-gray-400 hover:border-gray-500'
+                ? 'border-blue-400 bg-blue-50 dark:bg-blue-950'
+                : 'border-gray-400 hover:border-gray-500'
                 } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <input {...getInputProps()} disabled={isUploading} />
@@ -124,9 +125,12 @@ export function MarkdownEditor({
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  img: ({ node, ...props }) => (
-                    <img
-                      {...props}
+                  img: ({ src, alt }) => (
+                    <Image
+                      src={src as string || ''}
+                      alt={alt || 'Image'}
+                      width={500}
+                      height={300}
                       className="max-w-full h-auto rounded-lg my-4 shadow-sm border"
                       style={{ maxHeight: '400px', objectFit: 'contain' }}
                     />

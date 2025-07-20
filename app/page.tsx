@@ -72,7 +72,7 @@ export default function BlogLanding() {
                   Simple. Clean. Effective.
                 </h2>
                 <p className="max-w-[900px] text-gray-500 text-sm sm:text-base md:text-lg lg:text-xl/relaxed dark:text-gray-400 px-4">
-                  Focus on what matters most - your content. We've removed all the barriers between you and your
+                  Focus on what matters most - your content. We&apos;ve removed all the barriers between you and your
                   readers.
                 </p>
               </div>
@@ -107,7 +107,7 @@ export default function BlogLanding() {
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="text-center text-sm sm:text-base">
-                    Every post gets a unique link that's easy to share. Reach your audience wherever they are.
+                    Every post gets a unique link that&apos;s easy to share. Reach your audience wherever they are.
                   </CardDescription>
                 </CardContent>
               </Card>
@@ -125,7 +125,7 @@ export default function BlogLanding() {
                     Built for Writers, by Writers
                   </h2>
                   <p className="max-w-[600px] text-gray-500 text-sm sm:text-base md:text-lg lg:text-xl dark:text-gray-400">
-                    We believe that great ideas shouldn't be trapped behind complex interfaces or membership walls.
+                    We believe that great ideas shouldn&apos;t be trapped behind complex interfaces or membership walls.
                     SimpleBlog is designed to get out of your way and let your creativity flow.
                   </p>
                 </div>

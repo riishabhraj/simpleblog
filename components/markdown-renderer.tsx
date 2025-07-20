@@ -102,6 +102,7 @@
 
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import Image from 'next/image'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
@@ -117,16 +118,18 @@ export function MarkdownRenderer({ content, className = "" }: MarkdownRendererPr
         remarkPlugins={[remarkGfm]}
         components={{
           // Custom image renderer to handle base64 data URLs
-          img: ({ node, ...props }) => (
-            <img
-              {...props}
+          img: ({ src, alt }) => (
+            <Image
+              src={src as string || ''}
+              alt={alt || 'Image'}
+              width={500}
+              height={300}
               className="rounded-lg shadow-sm max-w-full h-auto my-4"
               style={{ maxWidth: '100%', height: 'auto' }}
-              loading="lazy"
             />
           ),
           // Custom code renderer - Fixed the inline detection
-          code: ({ node, className, children, ...props }) => {
+          code: ({ className, children, ...props }) => {
             const match = /language-(\w+)/.exec(className || '')
             const isCodeBlock = match && className
 

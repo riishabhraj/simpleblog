@@ -1,26 +1,35 @@
 import { prisma } from "@/lib/prisma"
 import { sanityClient } from "@/lib/sanity"
 
+interface SanityPostInput {
+  _id: string
+  title: string
+  content: Record<string, unknown>[]
+  excerpt?: string
+  slug: { current: string }
+  publishedAt?: string
+}
+
+interface SanityPostData {
+  _id: string
+  title: string
+  slug: { current: string }
+  content: Record<string, unknown>[]
+  mainImage?: unknown
+  publishedAt?: string
+}
+
 export class PostService {
-  // Sync Sanity post to Prisma
-  static async syncSanityPost(sanityPost: any, authorId: string) {
-    return await prisma.post.upsert({
-      where: { sanityId: sanityPost._id },
-      update: {
-        title: sanityPost.title,
-        content: JSON.stringify(sanityPost.content),
-        excerpt: sanityPost.excerpt,
-        slug: sanityPost.slug.current,
-        published: !!sanityPost.publishedAt,
-      },
-      create: {
+  // Create post from Sanity data
+  static async createFromSanityPost(sanityPost: SanityPostInput, authorId: string) {
+    return await prisma.post.create({
+      data: {
         title: sanityPost.title,
         content: JSON.stringify(sanityPost.content),
         excerpt: sanityPost.excerpt || "",
         slug: sanityPost.slug.current,
         published: !!sanityPost.publishedAt,
         authorId,
-        sanityId: sanityPost._id,
       },
     })
   }
@@ -39,7 +48,7 @@ export class PostService {
     })
 
     // Fetch corresponding Sanity content
-    const sanityPosts = await sanityClient.fetch(`
+    const sanityPosts: SanityPostData[] = await sanityClient.fetch(`
       *[_type == "post"] {
         _id,
         title,
@@ -51,7 +60,7 @@ export class PostService {
     `)
 
     return posts.map(post => {
-      const sanityContent = sanityPosts.find((sp: any) => sp._id === post.sanityId)
+      const sanityContent = sanityPosts.find((sp) => sp.slug.current === post.slug)
       return {
         ...post,
         sanityContent
