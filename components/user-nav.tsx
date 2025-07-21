@@ -1,6 +1,5 @@
 "use client"
 
-import type { Session } from "next-auth"
 import { useSession, signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -15,32 +14,17 @@ import {
 import { User, Settings, LogOut, PenTool } from "lucide-react"
 import Link from "next/link"
 
-/**
- * Runtime-safe helper – returns the session object or null
- * even if `useSession` is not initialised or still undefined
- */
-function safeSession(): Session | null {
-    // 1️⃣ `useSession` isn’t a function (next-auth not available)
-    const result = useSession()
-
-    if (typeof useSession !== "function") return null
-
-    // 2️⃣ useSession() itself might throw if a provider is missing
-    try {
-        // 3️⃣ Returned value can be undefined when there’s no provider
-        //    so we guard before reading `.data`
-        if (result && typeof result === "object" && "data" in result) {
-            return (result as { data: Session | null }).data
-        }
-    } catch {
-        // ignore – will fall through to “signed-out”
-    }
-
-    return null
-}
-
 export function UserNav() {
-    const session = safeSession()
+    const { data: session, status } = useSession()
+
+    // Loading state
+    if (status === "loading") {
+        return (
+            <div className="flex items-center gap-2">
+                <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+        )
+    }
 
     /* ---------- Signed-out UI ---------- */
     if (!session?.user) {
@@ -122,4 +106,3 @@ export function UserNav() {
         </DropdownMenu>
     )
 }
-
