@@ -84,7 +84,7 @@ export const authOptions: NextAuthOptions = {
     }
   },
   callbacks: {
-    async jwt({ token, user, account, trigger, session }) {
+    async jwt({ token, user, trigger, session }) {
       // Initial sign in
       if (user) {
         token.id = user.id
@@ -111,10 +111,10 @@ export const authOptions: NextAuthOptions = {
     },
   },
   events: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       console.log(`Sign in: ${user.email} via ${account?.provider}`)
     },
-    async session({ session, token }) {
+    async session({ session }) {
       console.log(`Session: ${session.user?.email}`)
     }
   },
