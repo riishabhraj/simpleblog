@@ -1,20 +1,23 @@
 import { withAuth } from "next-auth/middleware"
 
 export default withAuth(
-    function middleware(req) {
-        // Add any additional middleware logic here
+  function middleware(req) {
+    // Add any additional logic here if needed
+  },
+  {
+    callbacks: {
+      authorized: ({ token, req }) => {
+        // Protect /write and /dashboard routes
+        if (req.nextUrl.pathname.startsWith("/write") ||
+            req.nextUrl.pathname.startsWith("/dashboard")) {
+          return !!token
+        }
+        return true
+      },
     },
-    {
-        callbacks: {
-            authorized: ({ token }) => !!token
-        },
-    }
+  }
 )
 
 export const config = {
-    matcher: [
-        "/write/:path*",
-        "/api/posts/:path*",
-        "/dashboard/:path*"
-    ]
+  matcher: ["/write/:path*", "/dashboard/:path*"]
 }
