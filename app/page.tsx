@@ -118,7 +118,7 @@ export default function BlogLanding() {
         {/* About Section */}
         <section id="about" className="w-full py-8 sm:py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6 mx-auto">
-            <div className="grid gap-6 lg:gap-12 lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_600px] items-center">
+            <div className="grid gap-8 lg:gap-16 lg:grid-cols-2 items-center max-w-6xl mx-auto">
               <div className="flex flex-col justify-center space-y-4 order-2 lg:order-1">
                 <div className="space-y-2">
                   <h2 className="text-2xl font-bold tracking-tighter sm:text-3xl md:text-4xl lg:text-5xl">

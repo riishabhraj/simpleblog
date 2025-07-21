@@ -43,8 +43,6 @@ const getMockPost = (id: string) => {
 
 In a world filled with **information overload**, minimalist writing has become more important than ever. The ability to convey powerful messages with fewer words is not just a skill—it's an *art form* that can transform how your audience receives and processes your ideas.
 
-![Writing Setup](https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&h=400&fit=crop)
-
 Minimalist writing isn't about being lazy or cutting corners. It's about being **intentional** with every word you choose. When you strip away the unnecessary, what remains carries more weight, more meaning, and more impact.
 
 ## Key Principles to Embrace
@@ -77,16 +75,15 @@ If the answer is no, **cut it**.
 Here are some helpful tools:
 - [Hemingway Editor](https://hemingwayapp.com) - Highlights complex sentences
 - [Grammarly](https://grammarly.com) - Catches grammar issues
-- \`markdown\` - Simple formatting for clean writing
 
 Remember, minimalist writing is about maximizing impact while minimizing effort for your reader. Every word should earn its place on the page.`,
-      excerpt: "Discover how to convey **powerful messages** with fewer words. Learn the techniques that make your writing more *impactful* and engaging with modern Markdown formatting.",
+      excerpt: "Discover how to convey powerful messages with fewer words. Learn the techniques that make your writing more impactful and engaging.",
       slug: "art-of-minimalist-writing",
       author: {
         id: "mock-author-1",
         name: "Sarah Chen",
         email: "sarah@example.com",
-        image: "/placeholder.svg?height=40&width=40",
+        image: "/placeholder.svg",
       },
       createdAt: "2024-01-15T00:00:00.000Z",
       tags: [{ name: "Writing" }, { name: "Minimalism" }, { name: "Tips" }],
@@ -101,6 +98,12 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   const [post, setPost] = useState<Post | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Fix hydration issue
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     async function fetchPost() {
@@ -137,8 +140,10 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
       }
     }
 
-    fetchPost()
-  }, [params])
+    if (mounted) {
+      fetchPost()
+    }
+  }, [params, mounted])
 
   const getAuthorInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("").toUpperCase()
@@ -151,7 +156,12 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
     return `${readTime} min read`
   }
 
-  if (isLoading) {
+  const formatDate = (dateString: string) => {
+    if (!mounted) return "" // Prevent hydration mismatch
+    return new Date(dateString).toLocaleDateString()
+  }
+
+  if (!mounted || isLoading) {
     return (
       <div className="flex flex-col min-h-screen items-center justify-center p-4">
         <div className="text-center">Loading post...</div>
@@ -219,7 +229,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="font-medium text-sm sm:text-base">{post.author.name}</span>
                   <div className="flex flex-wrap items-center text-xs sm:text-sm text-gray-500 gap-1 sm:gap-2">
-                    <span>{new Date(post.publishedAt || post.createdAt).toLocaleDateString()}</span>
+                    <span>{formatDate(post.publishedAt || post.createdAt)}</span>
                     <span>•</span>
                     <div className="flex items-center">
                       <Clock className="h-3 w-3 mr-1" />

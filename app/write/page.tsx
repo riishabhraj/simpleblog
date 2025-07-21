@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -15,13 +15,22 @@ import Link from "next/link"
 import { MarkdownEditor } from "@/components/markdown-editor"
 
 export default function WritePage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (status === "loading") return // Still loading
+
+    if (!session) {
+      router.push("/signin?callbackUrl=/write")
+      return
+    }
+  }, [session, status, router])
 
   const addTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -123,6 +132,14 @@ export default function WritePage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (status === "loading") {
+    return <div>Loading...</div>
+  }
+
+  if (!session) {
+    return null // Will redirect
   }
 
   return (
