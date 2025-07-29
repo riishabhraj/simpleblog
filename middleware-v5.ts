@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth"
+import { auth } from "@/lib/auth-v5"
 
 export default auth((req) => {
     const { nextUrl } = req

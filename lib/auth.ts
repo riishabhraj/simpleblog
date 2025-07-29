@@ -1,24 +1,23 @@
-import { NextAuthOptions } from "next-auth"
+import NextAuth from "next-auth"
+import Google from "next-auth/providers/google"
+import GitHub from "next-auth/providers/github"
+import Credentials from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import GoogleProvider from "next-auth/providers/google"
-import GitHubProvider from "next-auth/providers/github"
-import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "./prisma"
-import type { Adapter } from "next-auth/adapters"
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  adapter: PrismaAdapter(prisma),
   providers: [
-    GoogleProvider({
+    Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
-    GitHubProvider({
+    GitHub({
       clientId: process.env.GITHUB_ID!,
       clientSecret: process.env.GITHUB_SECRET!,
     }),
-    CredentialsProvider({
+    Credentials({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -31,7 +30,7 @@ export const authOptions: NextAuthOptions = {
 
         try {
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email }
+            where: { email: credentials.email as string }
           })
 
           if (!user || !user.password) {
@@ -39,7 +38,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           const isPasswordValid = await bcrypt.compare(
-            credentials.password,
+            credentials.password as string,
             user.password
           )
 
@@ -63,7 +62,6 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 24 * 60 * 60, // 24 hours - Important for production
   },
   pages: {
     signIn: "/signin",
@@ -79,25 +77,17 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined
       }
     }
   },
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
-      // Initial sign in
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id
         token.email = user.email
         token.name = user.name
         token.image = user.image
       }
-
-      // Handle session updates
-      if (trigger === "update" && session) {
-        token = { ...token, ...session }
-      }
-
       return token
     },
     async session({ session, token }) {
@@ -114,10 +104,6 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       console.log(`Sign in: ${user.email} via ${account?.provider}`)
     },
-    async session({ session }) {
-      console.log(`Session: ${session.user?.email}`)
-    }
   },
-  // Enable debug in production temporarily to see what's happening
-  debug: process.env.NODE_ENV === 'production' ? true : false,
-}
+  debug: process.env.NODE_ENV === 'development',
+})
