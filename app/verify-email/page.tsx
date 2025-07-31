@@ -136,7 +136,7 @@ export default function VerifyEmail() {
                         </div>
                         <CardTitle className="text-xl sm:text-2xl">Verify Your Email</CardTitle>
                         <CardDescription className="text-sm sm:text-base">
-                            We've sent a 6-digit verification code to<br />
+                            We&apos;ve sent a 6-digit verification code to<br />
                             <strong>{email}</strong>
                         </CardDescription>
                     </CardHeader>
