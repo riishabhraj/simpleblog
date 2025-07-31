@@ -52,10 +52,16 @@ export default function Register() {
         }),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
-        router.push("/signin?message=Account created successfully")
+        if (data.needsVerification) {
+          // Redirect to verification page
+          router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`)
+        } else {
+          router.push("/signin?message=Account created successfully")
+        }
       } else {
-        const data = await response.json()
         setError(data.error || "Failed to create account")
       }
     } catch {

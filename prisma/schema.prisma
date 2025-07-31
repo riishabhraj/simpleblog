@@ -43,13 +43,22 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
-  password      String?   // For credentials provider
-  accounts      Account[]
-  sessions      Session[]
-  posts         Post[]
-  comments      Comment[]
+  password      String?
+
+  // OTP fields
+  otpCode       String?   // The OTP code
+  otpExpires    DateTime? // When the OTP expires
+  isVerified    Boolean   @default(false) // Email verification status
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  posts    Post[]
+  comments Comment[]
+
+  @@map("User")
 }
 
 model VerificationToken {
