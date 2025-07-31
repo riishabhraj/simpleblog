@@ -1,7 +1,7 @@
 // app/verify-email/page.tsx
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { PenTool, Mail, RefreshCw } from "lucide-react"
 import Link from "next/link"
 
-export default function VerifyEmail() {
+function VerifyEmailContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const email = searchParams.get('email')
@@ -216,5 +216,41 @@ export default function VerifyEmail() {
                 </Card>
             </div>
         </div>
+    )
+}
+
+// Loading fallback component
+function VerifyEmailLoading() {
+    return (
+        <div className="min-h-screen flex flex-col">
+            <header className="px-4 lg:px-6 h-14 flex items-center border-b">
+                <Link className="flex items-center justify-center" href="/">
+                    <PenTool className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
+                    <span className="font-bold text-base sm:text-lg">SimpleBlog</span>
+                </Link>
+            </header>
+            <div className="flex-1 flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
+                <Card className="w-full max-w-md mx-auto">
+                    <CardHeader className="text-center space-y-2 pb-4 sm:pb-6">
+                        <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                            <Mail className="h-8 w-8 text-blue-600 animate-pulse" />
+                        </div>
+                        <CardTitle className="text-xl sm:text-2xl">Loading...</CardTitle>
+                        <CardDescription className="text-sm sm:text-base">
+                            Please wait while we load the verification page.
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            </div>
+        </div>
+    )
+}
+
+// Main export with Suspense wrapper
+export default function VerifyEmail() {
+    return (
+        <Suspense fallback={<VerifyEmailLoading />}>
+            <VerifyEmailContent />
+        </Suspense>
     )
 }
