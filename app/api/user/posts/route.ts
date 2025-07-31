@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
+import { auth } from "@/lib/auth-v5"
 import { prisma } from "@/lib/prisma"
 
 // GET /api/user/posts - Get current user's posts
