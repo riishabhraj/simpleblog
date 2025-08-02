@@ -2,9 +2,9 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,14 +14,36 @@ import { PenTool, Save, Send, X, Plus } from "lucide-react"
 import Link from "next/link"
 import { MarkdownEditor } from "@/components/markdown-editor"
 
-export default function WritePage() {
+interface Post {
+  id: string
+  title: string
+  content: string
+  excerpt?: string
+  published: boolean
+  tags: { name: string }[]
+  author: {
+    id: string
+    name: string
+    email: string
+    image?: string
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+function WritePageContent() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get('edit')
+
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [originalPost, setOriginalPost] = useState<Post | null>(null)
 
   useEffect(() => {
     if (status === "loading") return // Still loading
@@ -31,6 +53,37 @@ export default function WritePage() {
       return
     }
   }, [session, status, router])
+
+  // Handle edit mode
+  useEffect(() => {
+    const fetchPostForEdit = async (postId: string) => {
+      try {
+        setIsLoading(true)
+        const response = await fetch(`/api/posts/${postId}`)
+        if (response.ok) {
+          const post = await response.json()
+          setOriginalPost(post)
+          setTitle(post.title)
+          setContent(post.content)
+          setTags(post.tags.map((tag: { name: string }) => tag.name))
+        } else {
+          alert("Failed to load post for editing")
+          router.push("/dashboard")
+        }
+      } catch (error) {
+        console.error("Error fetching post for edit:", error)
+        alert("Failed to load post for editing")
+        router.push("/dashboard")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (editId && session) {
+      setIsEditing(true)
+      fetchPostForEdit(editId)
+    }
+  }, [editId, session, router])
 
   const addTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -63,8 +116,11 @@ export default function WritePage() {
 
     setIsLoading(true)
     try {
-      const response = await fetch("/api/posts", {
-        method: "POST",
+      const url = isEditing ? `/api/posts/${editId}` : "/api/posts"
+      const method = isEditing ? "PUT" : "POST"
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -72,21 +128,21 @@ export default function WritePage() {
           title,
           content,
           tags,
-          published: false, // Save as draft
+          published: isEditing ? originalPost?.published : false, // Keep original publish status or save as draft
         }),
       })
 
       if (response.ok) {
         const post = await response.json()
-        alert("Post saved as draft!")
+        alert(isEditing ? "Post updated successfully!" : "Post saved as draft!")
         router.push(`/posts/${post.id}`)
       } else {
         const error = await response.json()
-        alert(error.error || "Failed to save post")
+        alert(error.error || `Failed to ${isEditing ? 'update' : 'save'} post`)
       }
     } catch (error) {
-      console.error("Error saving post:", error)
-      alert("Failed to save post")
+      console.error(`Error ${isEditing ? 'updating' : 'saving'} post:`, error)
+      alert(`Failed to ${isEditing ? 'update' : 'save'} post`)
     } finally {
       setIsLoading(false)
     }
@@ -105,8 +161,11 @@ export default function WritePage() {
 
     setIsLoading(true)
     try {
-      const response = await fetch("/api/posts", {
-        method: "POST",
+      const url = isEditing ? `/api/posts/${editId}` : "/api/posts"
+      const method = isEditing ? "PUT" : "POST"
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -120,15 +179,15 @@ export default function WritePage() {
 
       if (response.ok) {
         const post = await response.json()
-        alert("Post published successfully!")
+        alert(isEditing ? "Post updated and published!" : "Post published successfully!")
         router.push(`/posts/${post.id}`)
       } else {
         const error = await response.json()
-        alert(error.error || "Failed to publish post")
+        alert(error.error || `Failed to ${isEditing ? 'update and publish' : 'publish'} post`)
       }
     } catch (error) {
-      console.error("Error publishing post:", error)
-      alert("Failed to publish post")
+      console.error(`Error ${isEditing ? 'updating and publishing' : 'publishing'} post:`, error)
+      alert(`Failed to ${isEditing ? 'update and publish' : 'publish'} post`)
     } finally {
       setIsLoading(false)
     }
@@ -165,7 +224,7 @@ export default function WritePage() {
                 disabled={isLoading}
               >
                 <Save className="mr-2 h-4 w-4" />
-                {isLoading ? "Saving..." : "Save Draft"}
+                {isLoading ? "Saving..." : isEditing ? "Update" : "Save Draft"}
               </Button>
               <Button
                 size="sm"
@@ -173,7 +232,7 @@ export default function WritePage() {
                 disabled={isLoading}
               >
                 <Send className="mr-2 h-4 w-4" />
-                {isLoading ? "Publishing..." : "Publish"}
+                {isLoading ? "Publishing..." : isEditing ? "Update & Publish" : "Publish"}
               </Button>
             </>
           ) : (
@@ -195,7 +254,7 @@ export default function WritePage() {
                 disabled={isLoading}
               >
                 <Save className="h-4 w-4" />
-                <span className="hidden sm:inline ml-1">Save</span>
+                <span className="hidden sm:inline ml-1">{isEditing ? "Update" : "Save"}</span>
               </Button>
               <Button
                 size="sm"
@@ -204,7 +263,7 @@ export default function WritePage() {
                 disabled={isLoading}
               >
                 <Send className="h-4 w-4" />
-                <span className="hidden sm:inline ml-1">Publish</span>
+                <span className="hidden sm:inline ml-1">{isEditing ? "Update & Publish" : "Publish"}</span>
               </Button>
             </>
           ) : (
@@ -221,7 +280,9 @@ export default function WritePage() {
             // Editor Mode
             <Card>
               <CardHeader className="pb-4 sm:pb-6">
-                <CardTitle className="text-lg sm:text-xl">Write Your Story</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">
+                  {isEditing ? "Edit Your Story" : "Write Your Story"}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 sm:space-y-6">
                 {/* Title Input */}
@@ -300,5 +361,13 @@ export default function WritePage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function WritePage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <WritePageContent />
+    </Suspense>
   )
 }

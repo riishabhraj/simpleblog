@@ -48,8 +48,7 @@ export async function PUT(
 ) {
     try {
         const session = await auth()
-
-        if (!session?.user) {
+        if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
@@ -57,7 +56,14 @@ export async function PUT(
         const body = await request.json()
         const { title, content, excerpt, tags, published } = body
 
-        // Check if user owns the post
+        if (!title || !content) {
+            return NextResponse.json(
+                { error: "Title and content are required" },
+                { status: 400 }
+            )
+        }
+
+        // Check if post exists and user is the author
         const existingPost = await prisma.post.findUnique({
             where: { id },
             include: { author: true }
@@ -69,6 +75,27 @@ export async function PUT(
 
         if (existingPost.authorId !== session.user.id) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+        }
+
+        // Create slug from title
+        const slug = title
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .trim()
+
+        // Check if slug already exists for different post
+        let uniqueSlug = slug
+        let counter = 1
+        while (true) {
+            const slugExists = await prisma.post.findUnique({
+                where: { slug: uniqueSlug }
+            })
+            if (!slugExists || slugExists.id === id) {
+                break
+            }
+            uniqueSlug = `${slug}-${counter}`
+            counter++
         }
 
         // Handle tags
@@ -91,7 +118,8 @@ export async function PUT(
                 title,
                 content,
                 excerpt: excerpt || content.substring(0, 150) + "...",
-                published,
+                slug: uniqueSlug,
+                published: published !== undefined ? published : existingPost.published,
                 tags: {
                     set: [], // Clear existing tags
                     connect: tagConnections // Add new tags

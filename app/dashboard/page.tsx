@@ -8,12 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { PenTool, Edit, Trash2, Eye, Plus } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { UserNav } from "@/components/user-nav"
+import { getCardImage } from "@/lib/blog-utils"
 
 interface Post {
     id: string
     title: string
     excerpt: string
+    content: string
     published: boolean
     createdAt: string
     tags: { name: string }[]
@@ -128,6 +131,16 @@ export default function DashboardPage() {
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                             {posts.map((post) => (
                                 <Card key={post.id} className="flex flex-col">
+                                    {/* Post Image */}
+                                    <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
+                                        <Image
+                                            src={getCardImage(post.content, post.title)}
+                                            alt={post.title}
+                                            fill
+                                            className="object-cover transition-transform duration-300 hover:scale-105"
+                                        />
+                                    </div>
+
                                     <CardHeader className="pb-4">
                                         <div className="flex items-start justify-between">
                                             <Badge variant={post.published ? "default" : "secondary"}>
