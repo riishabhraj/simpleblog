@@ -116,7 +116,48 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* globals.css */
+.markdown-preview-container h1:first-child,
+.markdown-preview-container h2:first-child,
+.markdown-preview-container h3:first-child,
+.markdown-preview-container h4:first-child,
+.markdown-preview-container h5:first-child,
+.markdown-preview-container h6:first-child,
+.markdown-preview-container p:first-child,
+.markdown-preview-container>div:first-child h1:first-child,
+.markdown-preview-container>div:first-child h2:first-child,
+.markdown-preview-container>div:first-child h3:first-child,
+.markdown-preview-container>div:first-child p:first-child,
+.markdown-preview-container>*>*:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Fix spacing for post content */
+.prose :where(h1:first-child, h2:first-child, h3:first-child, h4:first-child, h5:first-child, h6:first-child, p:first-child) {
+  margin-top: 0 !important;
+}
+
+/* Enhanced card hover animations */
+.blog-card-image {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.blog-card-image:hover {
+  transform: scale(1.1);
+  filter: brightness(1.1) contrast(1.05);
+}
+
+.blog-card-overlay {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.blog-card-icon {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }

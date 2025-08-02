@@ -6,14 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { PenTool, Clock, Heart, MessageCircle, Share2, ChevronLeft, ChevronRight } from "lucide-react"
+import { PenTool, Clock, Heart, MessageCircle, Share2, ChevronLeft, ChevronRight, BookOpen } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { MarkdownRenderer } from "@/components/markdown-renderer"
 import { UserNav } from "@/components/user-nav"
+import { getCardImage, cleanExcerpt } from "@/lib/blog-utils"
 
 interface Post {
   id: string
   title: string
+  content?: string // Add content for image extraction
   excerpt: string
   slug?: string
   createdAt: string
@@ -43,11 +46,16 @@ interface ApiResponse {
   }
 }
 
-// Mock blog posts data (same as before)
+// Mock blog posts data with content for image extraction
 const mockBlogPosts: Post[] = [
   {
     id: "mock-1",
     title: "The Art of Minimalist Writing",
+    content: `# The Art of Minimalist Writing
+
+![Clean minimalist workspace with notebook and pen](https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&q=80)
+
+In a world filled with **information overload**, minimalist writing has become more important than ever...`,
     excerpt:
       "Discover how to convey **powerful messages** with fewer words. Learn the techniques that make your writing more *impactful* and engaging with modern Markdown formatting.",
     author: { id: "mock-1", name: "Sarah Chen", email: "sarah@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "SC" },
@@ -61,6 +69,11 @@ const mockBlogPosts: Post[] = [
   {
     id: "mock-2",
     title: "Building Better Habits Through Daily Writing",
+    content: `# Building Better Habits Through Daily Writing
+
+![Person writing in journal with coffee](https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80)
+
+How a simple daily writing practice can transform your life...`,
     excerpt:
       "How a simple daily writing practice can transform your life and help you develop better habits across all areas.",
     author: { id: "mock-2", name: "Marcus Johnson", email: "marcus@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "MJ" },
@@ -74,6 +87,11 @@ const mockBlogPosts: Post[] = [
   {
     id: "mock-3",
     title: "The Future of Digital Storytelling",
+    content: `# The Future of Digital Storytelling
+
+![Digital interface with storytelling elements](https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&q=80)
+
+Exploring how technology is changing the way we tell stories...`,
     excerpt:
       "Exploring how technology is changing the way we tell stories and connect with our audiences in the digital age.",
     author: { id: "mock-3", name: "Elena Rodriguez", email: "elena@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "ER" },
@@ -87,6 +105,9 @@ const mockBlogPosts: Post[] = [
   {
     id: "mock-4",
     title: "Finding Your Unique Voice as a Writer",
+    content: `# Finding Your Unique Voice as a Writer
+
+Every writer has a unique voice waiting to be discovered...`,
     excerpt:
       "Every writer has a unique voice waiting to be discovered. Here's how to find yours and let it shine through your work.",
     author: { id: "mock-4", name: "David Kim", email: "david@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "DK" },
@@ -383,8 +404,32 @@ export default function PostsPage() {
             ) : (
               <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {currentPosts.map((post) => (
-                  <Card key={post.id} className="flex flex-col h-full hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-3">
+                  <Card key={post.id} className="flex flex-col h-full group hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-600 bg-white dark:bg-gray-900">
+                    {/* Clickable Image Section with Enhanced Hover */}
+                    <Link href={`/posts/${post.id}`} className="block relative h-48 overflow-hidden group/image">
+                      <Image
+                        src={getCardImage(post.content || '', post.title, post.tags.map(tag => typeof tag === 'string' ? tag : tag.name))}
+                        alt={post.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover blog-card-image"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent blog-card-overlay opacity-0 group-hover:opacity-100" />
+
+                      {/* Hover overlay with read icon */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                        <div className="bg-white/95 dark:bg-black/95 rounded-full p-4 blog-card-icon transform scale-0 group-hover:scale-100 shadow-lg">
+                          <BookOpen className="h-6 w-6 text-primary" />
+                        </div>
+                      </div>
+
+                      {/* Read Post Badge */}
+                      <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-y-2 group-hover:translate-y-0">
+                        <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium">
+                          Read Post
+                        </div>
+                      </div>
+                    </Link>                    <CardHeader className="pb-3">
                       <div className="flex items-center space-x-2 mb-2">
                         <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
                           <AvatarImage src={post.author.avatar || post.author.image || "/placeholder.svg"} alt={post.author.name} />
@@ -402,12 +447,12 @@ export default function PostsPage() {
                           </div>
                         </div>
                       </div>
-                      <CardTitle className="line-clamp-2 hover:text-primary cursor-pointer text-base sm:text-lg">
+                      <CardTitle className="line-clamp-2 hover:text-primary cursor-pointer text-base sm:text-lg group-hover:text-primary transition-colors">
                         <Link href={`/posts/${post.id}`}>{post.title}</Link>
                       </CardTitle>
                       <CardDescription className="line-clamp-3 text-sm">
                         <MarkdownRenderer
-                          content={post.excerpt}
+                          content={cleanExcerpt(post.excerpt)}
                           className="prose-sm [&>p]:mb-0 [&>strong]:font-semibold [&>em]:italic"
                         />
                       </CardDescription>

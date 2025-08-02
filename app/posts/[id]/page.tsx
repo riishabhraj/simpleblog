@@ -41,6 +41,8 @@ const getMockPost = (id: string) => {
       title: "The Art of Minimalist Writing",
       content: `# The Art of Minimalist Writing
 
+![Clean minimalist workspace with notebook and pen](https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&q=80)
+
 In a world filled with **information overload**, minimalist writing has become more important than ever. The ability to convey powerful messages with fewer words is not just a skill—it's an *art form* that can transform how your audience receives and processes your ideas.
 
 Minimalist writing isn't about being lazy or cutting corners. It's about being **intentional** with every word you choose. When you strip away the unnecessary, what remains carries more weight, more meaning, and more impact.
@@ -86,9 +88,41 @@ Remember, minimalist writing is about maximizing impact while minimizing effort 
         image: "/placeholder.svg",
       },
       createdAt: "2024-01-15T00:00:00.000Z",
+      publishedAt: "2024-01-15T00:00:00.000Z",
+      readTime: "5 min read",
+      likes: 24,
+      comments: 8,
       tags: [{ name: "Writing" }, { name: "Minimalism" }, { name: "Tips" }],
       _count: { comments: 8 }
     },
+    {
+      id: "mock-2",
+      title: "Building Better Habits Through Daily Writing",
+      content: `# Building Better Habits Through Daily Writing
+
+![Person writing in journal with coffee](https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80)
+
+How a simple daily writing practice can transform your life and help you build lasting positive habits.
+
+## The Power of Daily Practice
+
+Writing every day, even just for 10 minutes, can create profound changes in your thinking patterns and overall well-being...`,
+      excerpt: "How a simple daily writing practice can transform your life and help you build lasting positive habits.",
+      slug: "building-better-habits",
+      author: {
+        id: "mock-author-2",
+        name: "Marcus Johnson",
+        email: "marcus@example.com",
+        image: "/placeholder.svg",
+      },
+      createdAt: "2024-01-14T00:00:00.000Z",
+      publishedAt: "2024-01-14T00:00:00.000Z",
+      readTime: "7 min read",
+      likes: 42,
+      comments: 15,
+      tags: [{ name: "Habits" }, { name: "Productivity" }, { name: "Personal Growth" }],
+      _count: { comments: 15 }
+    }
   ]
 
   return posts.find((post) => post.id === id)
@@ -266,7 +300,9 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
             </CardHeader>
 
             <CardContent>
-              <MarkdownRenderer content={post.content} className="leading-relaxed text-sm sm:text-base" />
+              <div className="prose dark:prose-invert max-w-none">
+                <MarkdownRenderer content={post.content} className="leading-relaxed text-sm sm:text-base" />
+              </div>
             </CardContent>
           </Card>
 

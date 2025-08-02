@@ -2,15 +2,16 @@
 
 import React from "react"
 import { useState, useCallback, useEffect } from "react"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
+import Image from "next/image"
 import { useDropzone } from "react-dropzone"
 import { useSession } from "next-auth/react"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import Image from 'next/image'
+import { Badge } from "@/components/ui/badge"
 import { uploadImage } from "@/lib/supabase"
+import { MarkdownRenderer } from "./markdown-renderer"
+import { extractFirstImageFromMarkdown } from "@/lib/blog-utils"
 
 interface MarkdownEditorProps {
   value?: string
@@ -82,6 +83,9 @@ export function MarkdownEditor({
     multiple: true
   })
 
+  // Extract featured image for preview
+  const extractedImage = extractFirstImageFromMarkdown(markdown)
+
   return (
     <Card>
       <CardHeader>
@@ -102,43 +106,55 @@ export function MarkdownEditor({
               placeholder={placeholder}
               className="min-h-[300px]"
             />
-            <div
-              {...getRootProps()}
-              className={`mt-4 border-2 border-dashed rounded-md p-4 text-center cursor-pointer transition-colors ${isDragActive
-                ? 'border-blue-400 bg-blue-50 dark:bg-blue-950'
-                : 'border-gray-400 hover:border-gray-500'
-                } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <input {...getInputProps()} disabled={isUploading} />
-              {isUploading ? (
-                <p className="text-blue-600">Uploading image...</p>
-              ) : isDragActive ? (
-                <p className="text-blue-600">Drop the image here...</p>
-              ) : (
-                <p>Drag & drop an image, or click to select</p>
+
+            <div className="mt-4 space-y-2">
+              {extractedImage && (
+                <div className="relative">
+                  <div className="relative h-32 w-full overflow-hidden rounded border">
+                    <Image
+                      src={extractedImage}
+                      alt="Featured image preview"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover"
+                    />
+                  </div>
+                  <Badge className="absolute top-2 right-2 bg-green-500">
+                    Featured Image
+                  </Badge>
+                </div>
               )}
+
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-md p-4 text-center cursor-pointer transition-colors ${isDragActive
+                  ? 'border-blue-400 bg-blue-50 dark:bg-blue-950'
+                  : 'border-gray-400 hover:border-gray-500'
+                  } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <input {...getInputProps()} disabled={isUploading} />
+                {isUploading ? (
+                  <p className="text-blue-600">Uploading image...</p>
+                ) : isDragActive ? (
+                  <p className="text-blue-600">Drop the image here...</p>
+                ) : (
+                  <p>Drag & drop an image, or click to select</p>
+                )}
+              </div>
             </div>
           </TabsContent>
 
           <TabsContent value="preview">
-            <div className="prose dark:prose-invert max-w-none min-h-[300px]">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  img: ({ src, alt }) => (
-                    <Image
-                      src={src as string || ''}
-                      alt={alt || 'Image'}
-                      width={500}
-                      height={300}
-                      className="max-w-full h-auto rounded-lg my-4 shadow-sm border"
-                      style={{ maxHeight: '400px', objectFit: 'contain' }}
-                    />
-                  ),
-                }}
-              >
-                {markdown}
-              </ReactMarkdown>
+            <div className="min-h-[300px] border rounded-md bg-white dark:bg-gray-950 p-4">
+              {markdown.trim() ? (
+                <div className="prose dark:prose-invert max-w-none markdown-preview-container">
+                  <MarkdownRenderer content={markdown} />
+                </div>
+              ) : (
+                <div className="text-gray-500 italic text-center py-8">
+                  Nothing to preview yet. Write some markdown in the editor!
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
