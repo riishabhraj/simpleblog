@@ -5,10 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { PenTool, Clock, Heart, MessageCircle, Share2, ArrowLeft } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { PenTool, Clock, Heart, MessageCircle, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { MarkdownRenderer } from "@/components/markdown-renderer"
 import { UserNav } from "@/components/user-nav"
+import { ShareMenu } from "@/components/ShareMenu"
+import { useLike } from "@/lib/hooks/usePostInteractions"
+import { useSession } from "next-auth/react"
 
 interface Post {
   id: string
@@ -30,7 +34,21 @@ interface Post {
     initials?: string
   }
   tags: { name: string }[]
-  _count: { comments: number }
+  _count?: {
+    comments: number
+    likes: number
+  }
+}
+
+interface Comment {
+  id: string
+  content: string
+  createdAt: string
+  author: {
+    id: string
+    name: string
+    image?: string
+  }
 }
 
 // Mock post data (fallback for demo)
@@ -93,7 +111,7 @@ Remember, minimalist writing is about maximizing impact while minimizing effort 
       likes: 24,
       comments: 8,
       tags: [{ name: "Writing" }, { name: "Minimalism" }, { name: "Tips" }],
-      _count: { comments: 8 }
+      _count: { comments: 8, likes: 24 }
     },
     {
       id: "mock-2",
@@ -121,7 +139,7 @@ Writing every day, even just for 10 minutes, can create profound changes in your
       likes: 42,
       comments: 15,
       tags: [{ name: "Habits" }, { name: "Productivity" }, { name: "Personal Growth" }],
-      _count: { comments: 15 }
+      _count: { comments: 15, likes: 42 }
     }
   ]
 
@@ -129,10 +147,21 @@ Writing every day, even just for 10 minutes, can create profound changes in your
 }
 
 export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
+  const { data: session } = useSession()
   const [post, setPost] = useState<Post | null>(null)
+  const [comments, setComments] = useState<Comment[]>([])
+  const [newComment, setNewComment] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [notFound, setNotFound] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [postId, setPostId] = useState<string>("")
+
+  const { liked, likeCount, loading: likeLoading, toggleLike } = useLike(
+    postId,
+    false,
+    post?._count?.likes || post?.likes || 0
+  )
 
   // Fix hydration issue
   useEffect(() => {
@@ -143,6 +172,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
     async function fetchPost() {
       try {
         const { id } = await params
+        setPostId(id)
         setIsLoading(true)
 
         // Try to fetch from API first
@@ -150,11 +180,21 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         if (response.ok) {
           const data = await response.json()
           setPost(data)
+          fetchComments(id)
         } else {
           // Fallback to mock data
           const mockPost = getMockPost(id)
           if (mockPost) {
             setPost(mockPost)
+            // Set some mock comments
+            setComments([
+              {
+                id: "1",
+                content: "Great article! Very insightful.",
+                createdAt: new Date().toISOString(),
+                author: { id: "1", name: "John Doe", image: "/placeholder.svg" }
+              }
+            ])
           } else {
             setNotFound(true)
           }
@@ -163,6 +203,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         console.error("Error fetching post:", error)
         // Fallback to mock data
         const { id } = await params
+        setPostId(id)
         const mockPost = getMockPost(id)
         if (mockPost) {
           setPost(mockPost)
@@ -177,7 +218,68 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
     if (mounted) {
       fetchPost()
     }
-  }, [params, mounted])
+  }, [mounted, params])
+
+  const fetchComments = async (id: string) => {
+    try {
+      const response = await fetch(`/api/posts/${id}/comments`)
+      if (response.ok) {
+        const data = await response.json()
+        setComments(data.comments || [])
+      }
+    } catch (error) {
+      console.error("Error fetching comments:", error)
+    }
+  }
+
+  const handleLike = () => {
+    toggleLike()
+  }
+
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!session?.user) {
+      window.location.href = '/signin'
+      return
+    }
+
+    if (!newComment.trim()) return
+
+    setIsSubmittingComment(true)
+    try {
+      const response = await fetch(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content: newComment })
+      })
+
+      if (response.ok) {
+        const comment = await response.json()
+        setComments([...comments, comment])
+        setNewComment("")
+        // Update post comment count
+        if (post) {
+          setPost({
+            ...post,
+            _count: {
+              comments: (post._count?.comments || 0) + 1,
+              likes: post._count?.likes || post.likes || 0
+            }
+          })
+        }
+      } else {
+        throw new Error('Failed to post comment')
+      }
+    } catch (error) {
+      console.error("Error posting comment:", error)
+      alert("Failed to post comment. Please try again.")
+    } finally {
+      setIsSubmittingComment(false)
+    }
+  }
 
   const getAuthorInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("").toUpperCase()
@@ -282,20 +384,31 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
                 ))}
               </div>
 
-              {/* Engagement Stats */}
-              <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-500 border-t pt-4">
-                <div className="flex items-center space-x-1">
-                  <Heart className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>{post.likes || 0} likes</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>{post.comments || post._count.comments} comments</span>
-                </div>
-                <Button variant="ghost" size="sm" className="h-auto p-0 text-xs sm:text-sm">
-                  <Share2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                  Share
+              {/* Interactive Buttons */}
+              <div className="flex flex-wrap items-center gap-4 sm:gap-6 border-t pt-4">
+                {/* Like Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLike}
+                  disabled={likeLoading}
+                  className={`h-auto p-2 text-xs sm:text-sm ${liked ? 'text-red-500' : 'text-gray-500'}`}
+                >
+                  <Heart className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 ${liked ? 'fill-current' : ''}`} />
+                  <span>{likeCount} likes</span>
                 </Button>
+
+                {/* Comment Count */}
+                <div className="flex items-center space-x-1 text-xs sm:text-sm text-gray-500">
+                  <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span>{comments.length} comments</span>
+                </div>
+
+                {/* Share Button */}
+                <ShareMenu
+                  postId={post.id}
+                  className="h-3 w-3 sm:h-4 sm:w-4"
+                />
               </div>
             </CardHeader>
 
@@ -303,6 +416,69 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
               <div className="prose dark:prose-invert max-w-none">
                 <MarkdownRenderer content={post.content} className="leading-relaxed text-sm sm:text-base" />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Comments Section */}
+          <Card className="mt-6 sm:mt-8">
+            <CardHeader>
+              <h3 className="text-lg sm:text-xl font-bold">Comments ({comments.length})</h3>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Comment Form */}
+              {session ? (
+                <form onSubmit={handleSubmitComment} className="space-y-4">
+                  <div>
+                    <Textarea
+                      placeholder="Write your comment..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      className="min-h-[100px]"
+                      disabled={isSubmittingComment}
+                    />
+                  </div>
+                  <Button type="submit" disabled={!newComment.trim() || isSubmittingComment}>
+                    {isSubmittingComment ? 'Posting...' : 'Post Comment'}
+                  </Button>
+                </form>
+              ) : (
+                <div className="text-center py-6 border rounded-lg">
+                  <p className="text-gray-500 mb-4">Please sign in to leave a comment</p>
+                  <Button asChild>
+                    <Link href="/signin">Sign In</Link>
+                  </Button>
+                </div>
+              )}
+
+              {/* Comments List */}
+              {comments.length > 0 ? (
+                <div className="space-y-4">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="border-l-2 border-gray-200 pl-4 py-2">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={comment.author.image || "/placeholder.svg"} alt={comment.author.name} />
+                          <AvatarFallback className="text-xs">
+                            {getAuthorInitials(comment.author.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <span className="font-medium text-sm">{comment.author.name}</span>
+                          <span className="text-xs text-gray-500 ml-2">
+                            {formatDate(comment.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">{comment.content}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-gray-500">
+                  <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                  <p>No comments yet. Be the first to comment!</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

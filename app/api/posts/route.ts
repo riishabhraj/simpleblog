@@ -18,7 +18,10 @@ export async function GET(request: NextRequest) {
                 },
                 tags: true,
                 _count: {
-                    select: { comments: true }
+                    select: {
+                        comments: true,
+                        likes: true
+                    }
                 }
             },
             orderBy: { createdAt: "desc" },
@@ -50,8 +53,27 @@ export async function POST(request: NextRequest) {
     try {
         const session = await auth()
 
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        console.log("Session data:", JSON.stringify(session, null, 2))
+
+        if (!session?.user?.id) {
+            console.log("No session or user ID found")
+            return NextResponse.json({ error: "Unauthorized - No user session" }, { status: 401 })
+        }
+
+        console.log("User ID from session:", session.user.id)
+
+        // Verify user exists in database
+        const userExists = await prisma.user.findUnique({
+            where: { id: session.user.id }
+        })
+
+        console.log("User found in database:", userExists ? "Yes" : "No")
+
+        if (!userExists) {
+            return NextResponse.json(
+                { error: "User not found in database" },
+                { status: 401 }
+            )
         }
 
         const body = await request.json()
@@ -116,6 +138,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(post, { status: 201 })
     } catch (error) {
         console.error("Error creating post:", error)
+
+        // Handle specific Prisma errors
+        if (error && typeof error === 'object' && 'code' in error) {
+            if (error.code === 'P2003') {
+                console.error("Foreign key constraint error - User ID might not exist:", error)
+                return NextResponse.json({
+                    error: "Invalid user reference. Please make sure you're logged in properly."
+                }, { status: 400 })
+            }
+        }
+
         return NextResponse.json({ error: "Failed to create post" }, { status: 500 })
     }
 }

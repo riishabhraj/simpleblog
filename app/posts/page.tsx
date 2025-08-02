@@ -2,16 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { PenTool, Clock, Heart, MessageCircle, Share2, ChevronLeft, ChevronRight, BookOpen } from "lucide-react"
+import { PenTool, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
-import { MarkdownRenderer } from "@/components/markdown-renderer"
 import { UserNav } from "@/components/user-nav"
-import { getCardImage, cleanExcerpt } from "@/lib/blog-utils"
+import { PostCard } from "@/components/PostCard"
 
 interface Post {
   id: string
@@ -33,7 +28,10 @@ interface Post {
     initials?: string
   }
   tags: { name: string }[] | string[]
-  _count?: { comments: number }
+  _count?: {
+    comments: number
+    likes: number
+  }
 }
 
 interface ApiResponse {
@@ -56,8 +54,7 @@ const mockBlogPosts: Post[] = [
 ![Clean minimalist workspace with notebook and pen](https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&q=80)
 
 In a world filled with **information overload**, minimalist writing has become more important than ever...`,
-    excerpt:
-      "Discover how to convey **powerful messages** with fewer words. Learn the techniques that make your writing more *impactful* and engaging with modern Markdown formatting.",
+    excerpt: "Discover how to convey powerful messages with fewer words. Learn the techniques that make your writing more impactful and engaging.",
     author: { id: "mock-1", name: "Sarah Chen", email: "sarah@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "SC" },
     publishedAt: "2024-01-15",
     readTime: "5 min read",
@@ -68,32 +65,30 @@ In a world filled with **information overload**, minimalist writing has become m
   },
   {
     id: "mock-2",
-    title: "Building Better Habits Through Daily Writing",
+    title: "Building Better Habits",
     content: `# Building Better Habits Through Daily Writing
 
 ![Person writing in journal with coffee](https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80)
 
 How a simple daily writing practice can transform your life...`,
-    excerpt:
-      "How a simple daily writing practice can transform your life and help you develop better habits across all areas.",
+    excerpt: "How a simple daily writing practice can transform your life and help you develop better habits.",
     author: { id: "mock-2", name: "Marcus Johnson", email: "marcus@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "MJ" },
     publishedAt: "2024-01-14",
     readTime: "7 min read",
     createdAt: "2024-01-14T00:00:00.000Z",
-    tags: ["Habits", "Productivity", "Personal Growth"],
+    tags: ["Habits", "Productivity", "Growth"],
     likes: 42,
     comments: 15,
   },
   {
     id: "mock-3",
-    title: "The Future of Digital Storytelling",
+    title: "Digital Storytelling",
     content: `# The Future of Digital Storytelling
 
 ![Digital interface with storytelling elements](https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&q=80)
 
 Exploring how technology is changing the way we tell stories...`,
-    excerpt:
-      "Exploring how technology is changing the way we tell stories and connect with our audiences in the digital age.",
+    excerpt: "Exploring how technology is changing the way we tell stories and connect with audiences in the digital age.",
     author: { id: "mock-3", name: "Elena Rodriguez", email: "elena@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "ER" },
     publishedAt: "2024-01-13",
     readTime: "6 min read",
@@ -104,12 +99,11 @@ Exploring how technology is changing the way we tell stories...`,
   },
   {
     id: "mock-4",
-    title: "Finding Your Unique Voice as a Writer",
+    title: "Finding Your Writing Voice",
     content: `# Finding Your Unique Voice as a Writer
 
 Every writer has a unique voice waiting to be discovered...`,
-    excerpt:
-      "Every writer has a unique voice waiting to be discovered. Here's how to find yours and let it shine through your work.",
+    excerpt: "Every writer has a unique voice waiting to be discovered. Here's how to find yours and let it shine.",
     author: { id: "mock-4", name: "David Kim", email: "david@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "DK" },
     publishedAt: "2024-01-12",
     readTime: "8 min read",
@@ -120,9 +114,8 @@ Every writer has a unique voice waiting to be discovered...`,
   },
   {
     id: "mock-5",
-    title: "The Psychology Behind Compelling Headlines",
-    excerpt:
-      "Understanding what makes readers click and how to craft headlines that capture attention without being clickbait.",
+    title: "Psychology of Headlines",
+    excerpt: "Understanding what makes readers click and how to craft headlines that capture attention without being clickbait.",
     author: { id: "mock-5", name: "Lisa Thompson", email: "lisa@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "LT" },
     publishedAt: "2024-01-11",
     readTime: "4 min read",
@@ -133,9 +126,8 @@ Every writer has a unique voice waiting to be discovered...`,
   },
   {
     id: "mock-6",
-    title: "Writing in the Age of AI: Embracing the Tools",
-    excerpt:
-      "How artificial intelligence is changing the writing landscape and how writers can adapt and thrive in this new era.",
+    title: "Writing in the AI Era",
+    excerpt: "How artificial intelligence is changing the writing landscape and how writers can adapt and thrive.",
     author: { id: "mock-6", name: "Alex Rivera", email: "alex@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "AR" },
     publishedAt: "2024-01-10",
     readTime: "9 min read",
@@ -146,9 +138,8 @@ Every writer has a unique voice waiting to be discovered...`,
   },
   {
     id: "mock-7",
-    title: "The Power of Personal Storytelling",
-    excerpt:
-      "Why sharing your personal experiences can create deeper connections with your audience and build authentic relationships.",
+    title: "Power of Personal Stories",
+    excerpt: "Why sharing your personal experiences can create deeper connections with your audience and build relationships.",
     author: { id: "mock-7", name: "Maya Patel", email: "maya@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "MP" },
     publishedAt: "2024-01-09",
     readTime: "6 min read",
@@ -159,9 +150,8 @@ Every writer has a unique voice waiting to be discovered...`,
   },
   {
     id: "mock-8",
-    title: "Overcoming Writer's Block: Practical Strategies",
-    excerpt:
-      "Proven techniques to break through creative barriers and get your words flowing again when inspiration seems lost.",
+    title: "Overcoming Writer's Block",
+    excerpt: "Proven techniques to break through creative barriers and get your words flowing again when inspiration seems lost.",
     author: { id: "mock-8", name: "James Wilson", email: "james@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "JW" },
     publishedAt: "2024-01-08",
     readTime: "7 min read",
@@ -172,7 +162,7 @@ Every writer has a unique voice waiting to be discovered...`,
   },
   {
     id: "mock-9",
-    title: "The Art of Visual Storytelling in Blogs",
+    title: "Visual Storytelling in Blogs",
     excerpt: "How to use images, infographics, and visual elements to enhance your written content and engage readers.",
     author: { id: "mock-9", name: "Sophie Chang", email: "sophie@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "SC" },
     publishedAt: "2024-01-07",
@@ -184,9 +174,8 @@ Every writer has a unique voice waiting to be discovered...`,
   },
   {
     id: "mock-10",
-    title: "Building an Authentic Online Presence",
-    excerpt:
-      "Strategies for creating genuine connections with your audience while maintaining your authentic voice online.",
+    title: "Building Authentic Presence",
+    excerpt: "Strategies for creating genuine connections with your audience while maintaining your authentic voice online.",
     author: { id: "mock-10", name: "Robert Garcia", email: "robert@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "RG" },
     publishedAt: "2024-01-06",
     readTime: "8 min read",
@@ -197,9 +186,8 @@ Every writer has a unique voice waiting to be discovered...`,
   },
   {
     id: "mock-11",
-    title: "The Science of Persuasive Writing",
-    excerpt:
-      "Understanding psychological principles that make writing more convincing and how to apply them ethically.",
+    title: "Science of Persuasive Writing",
+    excerpt: "Understanding psychological principles that make writing more convincing and how to apply them ethically.",
     author: { id: "mock-11", name: "Dr. Amanda Foster", email: "amanda@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "AF" },
     publishedAt: "2024-01-05",
     readTime: "10 min read",
@@ -210,7 +198,7 @@ Every writer has a unique voice waiting to be discovered...`,
   },
   {
     id: "mock-12",
-    title: "Creating Compelling Character Arcs",
+    title: "Creating Character Arcs",
     excerpt: "Whether fiction or non-fiction, learn how to develop characters that readers care about and remember.",
     author: { id: "mock-12", name: "Isabella Martinez", email: "isabella@example.com", avatar: "/placeholder.svg?height=40&width=40", initials: "IM" },
     publishedAt: "2024-01-04",
@@ -227,8 +215,10 @@ export default function PostsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [postsPerPage, setPostsPerPage] = useState(6)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
+    setIsMounted(true)
     fetchPosts()
   }, [])
 
@@ -252,6 +242,23 @@ export default function PostsPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!isMounted) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <header className="px-4 lg:px-6 h-14 flex items-center border-b">
+          <Link className="flex items-center justify-center" href="/">
+            <PenTool className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
+            <span className="font-bold text-base sm:text-lg">SimpleBlog</span>
+          </Link>
+        </header>
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center py-8">Loading...</div>
+        </main>
+      </div>
+    )
   }
 
   // Calculate pagination
@@ -404,90 +411,13 @@ export default function PostsPage() {
             ) : (
               <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {currentPosts.map((post) => (
-                  <Card key={post.id} className="flex flex-col h-full group hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-600 bg-white dark:bg-gray-900">
-                    {/* Clickable Image Section with Enhanced Hover */}
-                    <Link href={`/posts/${post.id}`} className="block relative h-48 overflow-hidden group/image">
-                      <Image
-                        src={getCardImage(post.content || '', post.title, post.tags.map(tag => typeof tag === 'string' ? tag : tag.name))}
-                        alt={post.title}
-                        fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        className="object-cover blog-card-image"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent blog-card-overlay opacity-0 group-hover:opacity-100" />
-
-                      {/* Hover overlay with read icon */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        <div className="bg-white/95 dark:bg-black/95 rounded-full p-4 blog-card-icon transform scale-0 group-hover:scale-100 shadow-lg">
-                          <BookOpen className="h-6 w-6 text-primary" />
-                        </div>
-                      </div>
-
-                      {/* Read Post Badge */}
-                      <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-y-2 group-hover:translate-y-0">
-                        <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium">
-                          Read Post
-                        </div>
-                      </div>
-                    </Link>                    <CardHeader className="pb-3">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
-                          <AvatarImage src={post.author.avatar || post.author.image || "/placeholder.svg"} alt={post.author.name} />
-                          <AvatarFallback className="text-xs">
-                            {post.author.initials || getAuthorInitials(post.author.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col min-w-0 flex-1">
-                          <span className="text-xs sm:text-sm font-medium truncate">{post.author.name}</span>
-                          <div className="flex items-center text-xs text-gray-500">
-                            <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
-                            <span className="truncate">
-                              {post.readTime || calculateReadTime(post.excerpt)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <CardTitle className="line-clamp-2 hover:text-primary cursor-pointer text-base sm:text-lg group-hover:text-primary transition-colors">
-                        <Link href={`/posts/${post.id}`}>{post.title}</Link>
-                      </CardTitle>
-                      <CardDescription className="line-clamp-3 text-sm">
-                        <MarkdownRenderer
-                          content={cleanExcerpt(post.excerpt)}
-                          className="prose-sm [&>p]:mb-0 [&>strong]:font-semibold [&>em]:italic"
-                        />
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-1 flex flex-col justify-between pt-0">
-                      <div className="flex flex-wrap gap-1 mb-3 sm:mb-4">
-                        {post.tags.slice(0, 3).map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {getTagName(tag)}
-                          </Badge>
-                        ))}
-                        {post.tags.length > 3 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{post.tags.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500">
-                        <span className="truncate">
-                          {new Date(post.publishedAt || post.createdAt).toLocaleDateString()}
-                        </span>
-                        <div className="flex items-center space-x-3 sm:space-x-4 flex-shrink-0 ml-2">
-                          <div className="flex items-center space-x-1">
-                            <Heart className="h-3 w-3 sm:h-4 sm:w-4" />
-                            <span>{post.likes || 0}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                            <span>{post.comments || post._count?.comments || 0}</span>
-                          </div>
-                          <Share2 className="h-3 w-3 sm:h-4 sm:w-4 cursor-pointer hover:text-primary" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    getAuthorInitials={getAuthorInitials}
+                    calculateReadTime={calculateReadTime}
+                    getTagName={getTagName}
+                  />
                 ))}
               </div>
             )}
