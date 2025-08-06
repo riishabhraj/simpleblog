@@ -24,7 +24,7 @@ export async function GET(
             orderBy: { createdAt: 'desc' }
         })
 
-        return NextResponse.json(comments)
+        return NextResponse.json({ comments })
     } catch (error) {
         console.error("Error fetching comments:", error)
         return NextResponse.json(

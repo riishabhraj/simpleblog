@@ -180,7 +180,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         if (response.ok) {
           const data = await response.json()
           setPost(data)
-          fetchComments(id)
+          await fetchComments(id)
         } else {
           // Fallback to mock data
           const mockPost = getMockPost(id)
@@ -257,8 +257,8 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
       })
 
       if (response.ok) {
-        const comment = await response.json()
-        setComments([...comments, comment])
+        // Refetch comments to get the updated list from the database
+        await fetchComments(postId)
         setNewComment("")
         // Update post comment count
         if (post) {
