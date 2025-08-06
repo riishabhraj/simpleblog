@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
-import { auth } from "@/lib/auth-v5"
+import { getServerSession } from "@/lib/auth-server"
 import { prisma } from "@/lib/prisma"
 
 // GET /api/user/posts - Get current user's posts
 export async function GET() {
     try {
-        const session = await auth()
+        const session = await getServerSession()
 
         if (!session?.user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

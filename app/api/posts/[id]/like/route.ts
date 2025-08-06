@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth-v5"
+import { getServerSession } from "@/lib/auth-server"
 import { prisma } from "@/lib/prisma"
 
 // POST /api/posts/[id]/like - Toggle like on a post
@@ -8,7 +8,7 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth()
+        const session = await getServerSession()
         if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
@@ -82,7 +82,7 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth()
+        const session = await getServerSession()
         const { id } = await params
         const postId = id
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth-v5"
+import { getServerSession } from "@/lib/auth-server"
 import { prisma } from "@/lib/prisma"
 
 // GET /api/posts - Get all posts
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 // POST /api/posts - Create new post
 export async function POST(request: NextRequest) {
     try {
-        const session = await auth()
+        const session = await getServerSession()
 
         console.log("Session data:", JSON.stringify(session, null, 2))
 

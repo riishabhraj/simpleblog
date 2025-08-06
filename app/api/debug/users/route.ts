@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
-import { auth } from "@/lib/auth-v5"
+import { getServerSession } from "@/lib/auth-server"
 import { prisma } from "@/lib/prisma"
 
 // GET /api/debug/users - Debug endpoint to check users
 export async function GET() {
     try {
-        const session = await auth()
+        const session = await getServerSession()
         console.log("Current session:", JSON.stringify(session, null, 2))
 
         const users = await prisma.user.findMany({
